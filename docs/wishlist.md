@@ -18,3 +18,7 @@
 ## 🗺️ Sector 4: Macro Bridge Calibration (Levels 1–4 Synchronization)
 - [ ] **Task Lifecycle Synchronization:** Verify that updating task checkboxes or modular sub-routines inside the Level 4 Target Lock view perfectly pipelines power increments up to your core ship fuel cells.
 - [ ] **Voronoi Viewport Optimization:** Audit the D3.js zoom matrices to ensure transition animations remain perfectly fluid when drilling down from Level 1 Galactic Sectors directly down into Level 3 Star Constellations.
+
+
+## 🗺️ Sector 5: GAMES TO ADD
+- [ ] Frogger Clone - what's the pairing?
