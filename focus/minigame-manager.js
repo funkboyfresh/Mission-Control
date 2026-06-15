@@ -431,21 +431,30 @@ minigameManager.triggerScreenImpact = function(frames, color) {
     this.flashColor = color || "#ffffff";
 };
 
-function startMinigameCombat() {
+window.startMinigameCombat = function() {
+    console.log("Telemetry: Initiating combat loop...");
+    
+    // Cleanup UI Ready Layer
     const readyMenu = document.getElementById('minigame-ready-menu');
     if (readyMenu) readyMenu.remove();
     
+    // Fade in gameplay elements
     const topHud = document.getElementById('minigame-top-hud');
     const bottomHud = document.getElementById('minigame-bottom-hud');
     const liveTracker = document.getElementById('minigame-live-tracker-overlay');
     
     if (topHud) topHud.style.opacity = "1";
     if (bottomHud) bottomHud.style.opacity = "1";
-    if (liveTracker) liveTracker.style.opacity = "0.25"; // Soft glow tracker line on side deck
+    if (liveTracker) liveTracker.style.opacity = "0.25";
     
     minigameManager.isActive = true;
     const canvas = document.getElementById('minigame-canvas');
     const ctx = canvas.getContext('2d');
+
+    // Force canvas synchronization before initialization
+    if (typeof minigameManager.activeGame.resizeCanvas === 'function') {
+        minigameManager.activeGame.resizeCanvas();
+    }
 
     if (minigameManager.activeGame) {
         minigameManager.activeGame.init(canvas, ctx, minigameManager.biome, minigameManager.isApexEvent, minigameManager.ammoPool);
@@ -453,18 +462,21 @@ function startMinigameCombat() {
     
     let lastScrapCount = 0;
 
+    // Decorate Physics Update Loop
     if (minigameManager.activeGame && minigameManager.activeGame.updatePhysics) {
         const originalUpdate = minigameManager.activeGame.updatePhysics;
         
         minigameManager.activeGame.updatePhysics = function() {
             originalUpdate.call(minigameManager.activeGame);
             
+            // Check for Scrap Updates
             let currentScrap = minigameManager.activeGame.bonusScrapEarned || 0;
             if (currentScrap > lastScrapCount) {
                 minigameManager.triggerScreenImpact(10, minigameManager.biome.color);
                 lastScrapCount = currentScrap;
             }
             
+            // Handle Environmental Biome Hazards
             const bid = minigameManager.biome.id;
             if (minigameManager.isActive && minigameManager.frameCount % 50 === 0 && (bid === 'ICE' || bid === 'TOXIC' || bid === 'FALLOUT')) {
                 minigameManager.hazards.push({
@@ -475,6 +487,7 @@ function startMinigameCombat() {
                 });
             }
             
+            // Update and Collate Hazard Entities
             for (let i = minigameManager.hazards.length - 1; i >= 0; i--) {
                 let haz = minigameManager.hazards[i];
                 haz.y += haz.speed;
@@ -499,6 +512,7 @@ function startMinigameCombat() {
             }
         };
     }
+};
 
     if (minigameManager.activeGame && minigameManager.activeGame.drawScene) {
         const originalDraw = minigameManager.activeGame.drawScene;
