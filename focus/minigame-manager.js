@@ -431,14 +431,19 @@ minigameManager.triggerScreenImpact = function(frames, color) {
     this.flashColor = color || "#ffffff";
 };
 
+/**
+ * STARTMINIGAMECOMBAT — HARDENED LAUNCH PROTOCOL
+ * Initializes the game viewport, forces canvas synchronization, and injects 
+ * physics/rendering interceptors for visual juice and hazard handling.
+ */
 window.startMinigameCombat = function() {
-    console.log("Telemetry: Initiating combat loop...");
+    console.log("Telemetry: Launching combat sequence...");
     
-    // Cleanup UI Ready Layer
+    // Remove UI menu overlay
     const readyMenu = document.getElementById('minigame-ready-menu');
     if (readyMenu) readyMenu.remove();
     
-    // Fade in gameplay elements
+    // Transition HUD state
     const topHud = document.getElementById('minigame-top-hud');
     const bottomHud = document.getElementById('minigame-bottom-hud');
     const liveTracker = document.getElementById('minigame-live-tracker-overlay');
@@ -451,32 +456,43 @@ window.startMinigameCombat = function() {
     const canvas = document.getElementById('minigame-canvas');
     const ctx = canvas.getContext('2d');
 
-    // Force canvas synchronization before initialization
+    // Robust Initialization Gate: Verify game existence
+    if (!minigameManager.activeGame) {
+        console.error("CRITICAL ERROR: activeGame is null/undefined. Campaign getter resolution failed.");
+        return;
+    }
+
+    // Force canvas synchronization before engine init
     if (typeof minigameManager.activeGame.resizeCanvas === 'function') {
         minigameManager.activeGame.resizeCanvas();
     }
 
-    if (minigameManager.activeGame) {
+    // Initialize the engine
+    try {
         minigameManager.activeGame.init(canvas, ctx, minigameManager.biome, minigameManager.isApexEvent, minigameManager.ammoPool);
+        console.log("Telemetry: Engine initialized successfully.");
+    } catch (e) {
+        console.error("Engine Initialization Exception:", e);
+        return;
     }
     
     let lastScrapCount = 0;
 
-    // Decorate Physics Update Loop
+    // Decorate Physics Update Loop (Hazard handling, impacts)
     if (minigameManager.activeGame && minigameManager.activeGame.updatePhysics) {
         const originalUpdate = minigameManager.activeGame.updatePhysics;
         
         minigameManager.activeGame.updatePhysics = function() {
             originalUpdate.call(minigameManager.activeGame);
             
-            // Check for Scrap Updates
+            // Check for Scrap Updates and trigger juice
             let currentScrap = minigameManager.activeGame.bonusScrapEarned || 0;
             if (currentScrap > lastScrapCount) {
                 minigameManager.triggerScreenImpact(10, minigameManager.biome.color);
                 lastScrapCount = currentScrap;
             }
             
-            // Handle Environmental Biome Hazards
+            // Environmental Hazard Injection (Biome specific)
             const bid = minigameManager.biome.id;
             if (minigameManager.isActive && minigameManager.frameCount % 50 === 0 && (bid === 'ICE' || bid === 'TOXIC' || bid === 'FALLOUT')) {
                 minigameManager.hazards.push({
@@ -487,7 +503,7 @@ window.startMinigameCombat = function() {
                 });
             }
             
-            // Update and Collate Hazard Entities
+            // Hazard collision and management
             for (let i = minigameManager.hazards.length - 1; i >= 0; i--) {
                 let haz = minigameManager.hazards[i];
                 haz.y += haz.speed;
@@ -510,6 +526,44 @@ window.startMinigameCombat = function() {
                 }
                 if (haz.y > canvas.height + 20) minigameManager.hazards.splice(i, 1);
             }
+        };
+    }
+
+    // Decorate Draw Scene for visual effects
+    if (minigameManager.activeGame && minigameManager.activeGame.drawScene) {
+        const originalDraw = minigameManager.activeGame.drawScene;
+        
+        minigameManager.activeGame.drawScene = function() {
+            ctx.save();
+            
+            // Apply screen shake
+            if (minigameManager.shakeFrames > 0) {
+                let dx = (Math.random() - 0.5) * 9;
+                let dy = (Math.random() - 0.5) * 9;
+                ctx.translate(dx, dy);
+                minigameManager.shakeFrames--;
+            }
+            
+            originalDraw.call(minigameManager.activeGame);
+            
+            // Draw Hazards
+            minigameManager.hazards.forEach(haz => {
+                ctx.save();
+                ctx.fillStyle = minigameManager.biome.color;
+                ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
+                ctx.beginPath(); ctx.arc(haz.x, haz.y, haz.size/2, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            });
+            
+            // Flash effect
+            if (minigameManager.flashOpacity > 0) {
+                ctx.fillStyle = minigameManager.flashColor;
+                ctx.globalAlpha = minigameManager.flashOpacity;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                minigameManager.flashOpacity -= 0.04;
+            }
+            
+            ctx.restore();
         };
     }
 };
