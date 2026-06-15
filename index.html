@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mission Control V12.3</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
+    <script src="https://unpkg.com/d3-delaunay@6.0.2/dist/d3-delaunay.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="level-up-overlay">
+            <h1 style="font-size: 3rem; color: var(--bg); text-align: center; letter-spacing: 5px; margin:0;">HYPER-DRIVE<br>ENGAGED</h1>
+            <p style="color: var(--bg); font-weight: bold; letter-spacing: 2px;">PILOT LEVEL UP</p>
+        </div>
+
+        <div class="grid-bg"></div>
+        <div class="dense-starfield" id="global-starfield"></div>
+
+        <div id="hud">
+            <div class="hud-top-row">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="settings-gear" onclick="openSettingsModal()">⚙</div>
+                    <span class="hud-level-text" id="hud-level">PILOT LEVEL 1</span>
+                </div>
+                <span class="hud-energy-text" id="hud-energy-readout">CAPACITOR 0%</span>
+            </div>
+            <div class="capacitor-container">
+                <div class="capacitor-fill" id="hud-capacitor-bar" style="width: 0%;"></div>
+                <div class="capacitor-segments"></div>
+            </div>
+        </div>
+
+        <div id="nav-bar">
+            <div id="breadcrumb" class="breadcrumb">GALAXY</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div id="zoom-out" class="zoom-btn" style="visibility:hidden" onclick="zoomOut()">[ ZOOM OUT ]</div>
+            </div>
+        </div>
+        
+        <div id="view-container" class="view" style="touch-action: none;"></div>
+        
+        <div id="control-footer" class="control-footer" style="display:none"></div>
+    </div>
+
+    <div id="task-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header" id="modal-header-text">TARGET INITIALIZATION</div>
+            
+            <div class="input-group">
+                <span class="input-label">Target Designation</span>
+                <input type="text" id="modal-task-name" class="modal-input" placeholder="Enter target name..." autocomplete="off">
+            </div>
+
+            <div class="input-group" id="modal-horizon-group">
+                <span class="input-label">Mission Parameters (Orbit)</span>
+                <select id="modal-horizon-select" class="modal-input">
+                    <option value="IMMINENT">IMMINENT (0 - 7 Days)</option>
+                    <option value="HORIZON">HORIZON (8 - 14 Days)</option>
+                    <option value="TRAJECTORY">TRAJECTORY (> 14 Days / Undefined)</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
+                    <span class="input-label">Temporal Date</span>
+                    <input type="date" id="modal-task-date" class="modal-input">
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
+                    <span class="input-label">Temporal Time</span>
+                    <input type="time" id="modal-task-time" class="modal-input">
+                </div>
+            </div>
+
+            <span class="input-label">Sub-Routines</span>
+            <div class="subtasks-container" id="modal-subtasks-list"></div>
+            
+            <div class="add-btn-bar" id="modal-add-btn" onclick="addModalSubtask()">+ ADD ROUTINE</div>
+
+            <div class="modal-actions">
+                <button class="mod-btn" style="flex: 0 0 25%;" onclick="closeTaskModal()">CANCEL</button>
+                <button class="success-btn" id="modal-save-btn" style="flex: 1; padding: 10px; font-size:0.8rem; border-radius: 2px;" onclick="saveTaskModal()">LOCK TARGET</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sector-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">TERRITORIAL GEOMETRY MAP</div>
+            <div class="subtasks-container" id="sector-edit-list"></div>
+            <div class="add-btn-bar" id="sector-add-btn" onclick="addNewSector()">+ ADD SECTOR</div>
+            <div class="modal-actions">
+                <button class="mod-btn" style="flex: 0 0 25%;" onclick="closeSectorModal()">CANCEL</button>
+                <button class="success-btn" style="flex: 1; padding: 10px; font-size:0.8rem; border-radius: 2px;" onclick="saveSectorModal()">INITIALIZE MAP</button>
+            </div>
+        </div>
+    </div>
+
+  <div id="settings-modal-overlay" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">SYSTEM CONFIGURATION</div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 12px;">
+            <span class="input-label" style="margin: 0; line-height: 20px;">HAPTIC FEEDBACK</span>
+            <input type="checkbox" id="settings-haptics-toggle" style="width: 20px; height: 20px; accent-color: var(--accent); margin: 0; padding: 0;">
+        </div>
+        
+        <p style="font-size: 0.55rem; color: #fff; opacity: 0.7; line-height: 1.4; margin-top: 0; margin-bottom: 20px;">
+            Engage physical vibration motor on supported mobile devices during critical events.
+        </p>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-top: 1px solid #333; padding-top: 15px;">
+            <span style="font-weight: bold; color: var(--accent); font-size: 0.8rem; letter-spacing: 1px;">CRYO-CHAMBER POWER</span>
+            <select id="settings-screen-mode" onchange="localStorage.setItem('cryoScreenMode', this.value)" style="background: #111; color: #fff; border: 1px solid var(--accent); padding: 5px; font-family: monospace; font-size: 0.7rem;">
+                <option value="BRIGHT">BRIGHT (Strict Focus)</option>
+                <option value="DIM">DIM (Strict OLED Saver)</option>
+                <option value="SYSTEM">SYSTEM (Lenient / Allow Sleep)</option>
+            </select>
+        </div>
+        <p style="font-size: 0.55rem; color: #fff; opacity: 0.7; line-height: 1.4; margin-top: 0; margin-bottom: 20px;">
+            BRIGHT/DIM will penalize you if you leave the app. SYSTEM allows hardware sleep, but disables the focus penalty.
+        </p>
+
+        <button class="success-btn" id="factory-reset-btn" onclick="factoryReset()" style="margin-bottom: 15px;">FACTORY RESET</button>
+        
+        <div class="modal-actions" style="margin-top: 0;">
+            <button class="success-btn" style="width: 100%; padding: 12px; font-size: 0.8rem; border-radius: 2px;" onclick="closeSettingsModal()">SAVE CONFIG</button>
+        </div>
+        </div>
+    </div>
+
+    <script src="encounters.js"></script>
+    <script src="state.js"></script>
+
+
+    <script src="pantheon/pantheon-data.js"></script>
+    <script src="pantheon/pantheon-engine.js"></script>
+    <script src="pantheon/pantheon-renderer.js"></script>
+
+    
+    <script src="focus/pomodoro-engine.js"></script>
+    <script src="games/void-swarm.js"></script>
+    <script src="games/ice-leviathan.js"></script>
+    <script src="games/crystal-matrix.js"></script>
+    <script src="games/singularity-swell.js"></script> 
+    <script src="games/ouroboros-sweep.js"></script>
+    <script src="games/supernova-escape.js"></script>
+    <script src="games/vertical-shmup.js"></script>
+    <script src="games/slipstream-run.js"></script>
+    <script src="games/singularity-forge.js"></script>
+    <script src="games/tactical-draft.js"></script>
+    <script src="games/void-harpoon.js"></script>
+    <script src="games/railgun-assassin.js"></script>
+    <script src="games/orbital-defense.js"></script>
+    <script src="games/dreadnought-artillery.js"></script>
+    <script src="games/cosmic-ricochet.js"></script>
+    <script src="games/slipstream-grapple.js"></script>
+    <script src="games/void-blade.js"></script>
+    <script src="games/aegis-deflector.js"></script>
+    <script src="games/solar-surf.js"></script>
+    <script src="games/orbital-flail.js"></script>
+    <script src="games/compression-pulse.js"></script>
+    <script src="games/rail-grider.js"></script>
+    <script src="games/plasmatic-rammer.js"></script>
+    <script src="games/fusion-cascade.js"></script>
+    <script src="games/singularity-tether.js"></script>
+    <script src="games/chrono-dash.js"></script>
+    <script src="games/solar-collector.js"></script>
+    <script src="games/magnetic-coupler.js"></script>
+    <script src="games/core-charger.js"></script>
+    <script src="games/track-welder.js"></script>
+    <script src="games/shield-forge.js"></script>
+    <script src="games/resonance-linker.js"></script>
+    <script src="games/anchor-calibrator.js"></script>
+    <script src="games/tachyon-mapper.js"></script>
+    <script src="games/swarm-analyzer.js"></script>
+    <script src="games/pressure-vent.js"></script>
+    <script src="games/node-compiler.js"></script>
+
+    
+    <script src="focus/minigame-manager.js"></script>
+
+    
+    <script src="renderer.js"></script>
+    <script src="engine.js"></script>
+    
+</body>
+</html>
