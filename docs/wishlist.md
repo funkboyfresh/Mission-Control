@@ -20,5 +20,6 @@
 - [ ] **Voronoi Viewport Optimization:** Audit the D3.js zoom matrices to ensure transition animations remain perfectly fluid when drilling down from Level 1 Galactic Sectors directly down into Level 3 Star Constellations.
 
 
-## 🗺️ Sector 5: GAMES TO ADD
+##  Sector 5: GAMES TO ADD
 - [ ] Frogger Clone - what's the pairing?
+- [ ] Galaga Clone - what's the pairing?
