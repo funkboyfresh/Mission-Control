@@ -289,7 +289,7 @@ function cryoTick() {
         const clockEl = document.getElementById('cryo-clock');
         if (clockEl) clockEl.innerText = timeStr;
         
-       if (focusState.timeRemaining <= 0) {
+      if (focusState.timeRemaining <= 0) {
             clearInterval(focusState.timerInterval);
             focusState.isActive = false;
             
@@ -309,9 +309,13 @@ function cryoTick() {
             focusState.sessionEnergy = totalSessionEnergy;
             focusState.sessionScrap = absoluteVaultTarget;
             
-            if (typeof triggerMinigameEncounter === 'function') {
-                triggerMinigameEncounter(focusState.sessionTotalDuration, focusState.sessionMultiplier, isApexEvent, focusState.sessionEnergy, focusState.sessionScrap, finishedBiome);
+            // SECURITY INTERCEPT FIX: Target the window global scope directly to stop it bypassing the combat window
+            const launchTrigger = window.triggerMinigameEncounter || triggerMinigameEncounter;
+            if (typeof launchTrigger === 'function') {
+                console.log("Telemetry: Timer complete. Securely invoking global triggerMinigameEncounter.");
+                launchTrigger(focusState.sessionTotalDuration, focusState.sessionMultiplier, isApexEvent, focusState.sessionEnergy, focusState.sessionScrap, finishedBiome);
             } else {
+                console.warn("Telemetry Warning: Minigame trigger not found globally. Executing default resource dump.");
                 if (typeof state !== 'undefined') state.scrap += focusState.sessionScrap;
                 if (isApexEvent && typeof addEnergy === 'function') {
                     addEnergy(focusState.sessionEnergy);
