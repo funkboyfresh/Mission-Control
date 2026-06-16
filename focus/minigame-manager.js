@@ -232,7 +232,10 @@ const CAMPAIGN_DATABANK = [
     }
 ];
 
-window.triggerMinigameEncounter = function(duration, multiplier, isApex, energy, scrap, biomeOverride) {
+
+window.triggerMinigameEncounter = function(encounterData) {
+    console.log("Cryo tick complete. Mounting minigame encounter viewport.");
+    
     if (typeof exitCryoMode === 'function') exitCryoMode(); 
     
     const sessionMins = duration || 30;
