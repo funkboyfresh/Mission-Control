@@ -232,7 +232,7 @@ const CAMPAIGN_DATABANK = [
     }
 ];
 
-function triggerMinigameEncounter(duration, multiplier, isApex, energy, scrap, biomeOverride) {
+window.triggerMinigameEncounter = function(duration, multiplier, isApex, energy, scrap, biomeOverride) {
     if (typeof exitCryoMode === 'function') exitCryoMode(); 
     
     const sessionMins = duration || 30;
@@ -416,7 +416,7 @@ function triggerMinigameEncounter(duration, multiplier, isApex, energy, scrap, b
     `;
     
     document.body.appendChild(canvasContainer);
-}
+};
 
 minigameManager.rerollCampaignTrack = function(targetMins) {
     localStorage.removeItem(`active_campaign_track_${this.biome.id}`);
