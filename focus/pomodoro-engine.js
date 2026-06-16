@@ -247,6 +247,21 @@ function launchCryoStasis(minutes, multiplier, btnElement) {
     }
 }
 
+
+
+function onPomodoroComplete() {
+    console.log("Mission horizon reached.");
+    
+    // Check if the global bracket exists before firing
+    if (typeof window.triggerMinigameEncounter === 'function') {
+        window.triggerMinigameEncounter();
+    } else {
+        console.error("Telemetry failure: triggerMinigameEncounter is missing from the global window scope.");
+    }
+}
+
+
+
 function cryoTick() {
     try {
         const now = Date.now();
