@@ -55,14 +55,20 @@ function addEnergy(baseAmount) {
         let stipend = state.playerLevel * 50;
         state.scrap += stipend;
         
-        showSoftWarning(`HYPER-DRIVE ENGAGED\nPROMOTED TO ${getFleetTitle(state.playerLevel).toUpperCase()}\nOFFERING GRANTED: +1 VOID OFFERING`);
+        // INTERCEPT FIX: If a mini-game overlay viewport wrapper exists, suppress the toast alert text 
+        // to prevent it from hijacking or blanking out the active combat/Apex screen display.
+        if (document.getElementById('minigame-viewport')) {
+            console.log("Telemetry: Level Up detected during encounter sequence. Suppressing standard bridge toast layout.");
+        } else {
+            showSoftWarning(`HYPER-DRIVE ENGAGED\nPROMOTED TO ${getFleetTitle(state.playerLevel).toUpperCase()}\nOFFERING GRANTED: +1 VOID OFFERING`);
+        }
         
-        triggerHyperDrive();
+        if (typeof triggerHyperDrive === 'function') triggerHyperDrive();
         triggerHaptic([100, 50, 100, 50, 200]);
     }
     
     save(); 
-    updateHUD();
+    if (typeof updateHUD === 'function') updateHUD();
 }
 
 
